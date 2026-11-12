@@ -14,7 +14,7 @@ create table public.profiles (
   constraint username_format check (username ~ '^[a-z0-9_]{3,20}$'),
   constraint display_name_len check (char_length(display_name) between 1 and 50),
   constraint bio_len check (char_length(bio) <= 200)
-);
+); 
 
 create table public.posts (
   id uuid primary key default gen_random_uuid(),
