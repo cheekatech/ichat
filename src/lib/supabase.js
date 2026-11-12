@@ -1,13 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export function resolveSupabaseConfig(env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {}) {
+  const rawUrl = String(env.VITE_SUPABASE_URL ?? '').trim();
+  const rawKey = String(env.VITE_SUPABASE_ANON_KEY ?? '').trim();
+  const url = /^https?:\/\//.test(rawUrl) ? rawUrl : '';
+  const key = rawKey;
 
-export const isConfigured = Boolean(url && key);
+  return {
+    url,
+    key,
+    isConfigured: Boolean(url && key),
+  };
+}
+
+const { url, key, isConfigured } = resolveSupabaseConfig();
 
 // When a verification/reset link is expired, Supabase redirects back with
 // #error_description=... in the URL. Capture it before the router rewrites the URL.
 export const linkError = (() => {
+  if (typeof window === 'undefined' || !window.location) return '';
   try {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     return params.get('error_description') || '';
@@ -16,6 +27,10 @@ export const linkError = (() => {
   }
 })();
 
-export const supabase = createClient(url || 'http://localhost:54321', key || 'missing-key', {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-});
+export { isConfigured };
+
+export const supabase = isConfigured
+  ? createClient(url, key, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    })
+  : null;
